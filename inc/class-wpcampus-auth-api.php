@@ -34,6 +34,29 @@ final class WPCampus_Auth_API {
 	}
 
 	/**
+	 * Prepare the user data we need from the WP_User object.
+	 *
+	 * @param $user - WP_User object
+	 *
+	 * @return object
+	 */
+	private function prepare_user_data( $user ) {
+
+		$user_data = $user->data;
+
+		// Clean up response. We only need specific user data.
+		$data_to_remove = [ 'user_pass', 'user_nicename', 'user_activation_key' ];
+		foreach ( $data_to_remove as $key ) {
+			unset( $user->{$key} );
+		}
+
+		$user_data->roles = $user->roles;
+		$user_data->caps  = $user->allcaps;
+
+		return $user_data;
+	}
+
+	/**
 	 * This route depends on the "JWT Authentication for WP-API" plugin which:
 	 * - intercepts the request
 	 * - validates the token
@@ -60,15 +83,7 @@ final class WPCampus_Auth_API {
 		}
 
 		// Clean up response. We only need specific user data.
-		$user = $response->data;
-
-		$data_to_remove = [ 'user_pass', 'user_nicename', 'user_activation_key' ];
-		foreach ( $data_to_remove as $key ) {
-			unset( $user->{$key} );
-		}
-
-		$user->roles = $response->roles;
-		$user->caps  = $response->allcaps;
+		$user = $this->prepare_user_data( $response );
 
 		return new WP_REST_Response( $user );
 	}
