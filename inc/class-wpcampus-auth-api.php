@@ -15,6 +15,9 @@ final class WPCampus_Auth_API {
 		$plugin = new self();
 
 		add_action( 'rest_api_init', [ $plugin, 'register_routes' ] );
+
+		add_filter( 'jwt_auth_token_before_dispatch', [ $plugin, 'filter_jwt_auth_dispatch' ], 10, 2 );
+
 	}
 
 	/**
@@ -31,6 +34,25 @@ final class WPCampus_Auth_API {
 				'callback' => array( $this, 'get_current_user' ),
 			)
 		);
+	}
+
+	/**
+	 * Filter the auth token returned by JWT Authentication for WP-API
+	 * plugin to include the user data we need.
+	 *
+	 * @param $data
+	 * @param $user
+	 *
+	 * @return array
+	 */
+	public function filter_jwt_auth_dispatch( $data, $user ) {
+
+		$new_data = [
+			'token' => $data['token'],
+			'user'  => $this->prepare_user_data( $user ),
+		];
+
+		return $new_data;
 	}
 
 	/**
