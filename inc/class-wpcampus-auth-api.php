@@ -29,10 +29,10 @@ final class WPCampus_Auth_API {
 		register_rest_route(
 			'wpcampus',
 			'/auth/user/',
-			array(
+			[
 				'methods'  => 'GET',
-				'callback' => array( $this, 'get_current_user' ),
-			)
+				'callback' => [ $this, 'get_current_user' ],
+			]
 		);
 	}
 
@@ -91,17 +91,17 @@ final class WPCampus_Auth_API {
 	public function get_current_user( WP_REST_Request $request ) {
 
 		if ( ! function_exists( 'run_jwt_auth' ) ) {
-			return new WP_Error( 'wpcampus', __( 'This request requires functionality that is missing.', 'wpcampus-auth' ), array( 'status' => 500 ) );
+			return new WP_Error( 'wpcampus', __( 'This request requires functionality that is missing.', 'wpcampus-auth' ), [ 'status' => 500 ] );
 		}
 
 		if ( empty( $_SERVER['HTTP_AUTHORIZATION'] ) ) {
-			return new WP_Error( 'wpcampus', __( 'An authorization token is required.', 'wpcampus-auth' ), array( 'status' => 401 ) );
+			return new WP_Error( 'wpcampus', __( 'An authorization token is required.', 'wpcampus-auth' ), [ 'status' => 401 ] );
 		}
 
 		$response = wp_get_current_user();
 
 		if ( empty( $response->ID ) || empty( $response->data ) ) {
-			return new WP_Error( 'wpcampus', __( 'This user is invalid.', 'wpcampus-auth' ), array( 'status' => 500 ) );
+			return new WP_Error( 'wpcampus', __( 'This user is invalid.', 'wpcampus-auth' ), [ 'status' => 500 ] );
 		}
 
 		// Clean up response. We only need specific user data.
