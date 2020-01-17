@@ -18,6 +18,8 @@ final class WPCampus_Auth_API {
 
 		add_filter( 'jwt_auth_token_before_dispatch', [ $plugin, 'filter_jwt_auth_dispatch' ], 10, 2 );
 
+		add_filter( 'jwt_auth_expire', [ $plugin, 'filter_jwt_auth_expire' ], 10, 2 );
+
 	}
 
 	/**
@@ -53,6 +55,22 @@ final class WPCampus_Auth_API {
 		];
 
 		return $new_data;
+	}
+
+	/**
+	 * Filter when the JWT Authentication for WP-API plugin
+	 * auth token expires. The default is a week.
+	 *
+	 * The Gatsby app is set to expire every 48 hours.
+	 *
+	 * @param $expiration - string - timestamp
+	 * @param $issued     - string - timestamp
+	 *
+	 * @return float|int
+	 */
+	public function filter_jwt_auth_expire( $expiration, $issued ) {
+
+		return $issued + ( DAY_IN_SECONDS * 7 );
 	}
 
 	/**
