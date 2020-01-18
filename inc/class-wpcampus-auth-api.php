@@ -10,6 +10,13 @@ final class WPCampus_Auth_API {
 	private $option_name_access_token = 'http_wpc_auth_access_token';
 
 	/**
+	 * Name of WP database option for JWT secret key.
+	 *
+	 * @var string
+	 */
+	private $option_name_jwt_secret_key = 'http_wpc_auth_secret_key';
+
+	/**
 	 * Name of PHP request header for access token.
 	 *
 	 * @var string
@@ -27,6 +34,8 @@ final class WPCampus_Auth_API {
 	public static function register() {
 
 		$plugin = new self();
+
+		$plugin->define_secret_key();
 
 		add_filter( 'rest_pre_serve_request', [ $plugin, 'add_rest_headers' ] );
 
@@ -52,6 +61,14 @@ final class WPCampus_Auth_API {
 				'callback' => [ $this, 'get_current_user' ],
 			]
 		);
+	}
+
+	/**
+	 * Define the secret key for the JWT plugin.
+	 */
+	private function define_secret_key() {
+
+		define( 'JWT_AUTH_SECRET_KEY', get_option( $this->option_name_jwt_secret_key ) );
 	}
 
 	/**
