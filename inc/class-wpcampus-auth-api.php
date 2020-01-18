@@ -3,6 +3,20 @@
 final class WPCampus_Auth_API {
 
 	/**
+	 * Name of WP database option for access token.
+	 *
+	 * @var string
+	 */
+	private $option_name_access_token = 'http_wpc_auth_access_token';
+
+	/**
+	 * Name of PHP request header for access token.
+	 *
+	 * @var string
+	 */
+	private $header_auth_access = 'wpcauthaccess';
+
+	/**
 	 * We don't need to instantiate this class.
 	 */
 	protected function __construct() { }
@@ -13,6 +27,8 @@ final class WPCampus_Auth_API {
 	public static function register() {
 
 		$plugin = new self();
+
+		add_filter( 'rest_pre_serve_request', [ $plugin, 'add_rest_headers' ] );
 
 		add_action( 'rest_api_init', [ $plugin, 'register_routes' ] );
 
@@ -39,6 +55,66 @@ final class WPCampus_Auth_API {
 	}
 
 	/**
+	 * Returns our access token.
+	 *
+	 * @return string
+	 */
+	private function get_access_token() {
+
+		return get_option( $this->option_name_access_token );
+	}
+
+	/**
+	 * Returns access token sent in request.
+	 *
+	 * @return string
+	 */
+	private function get_request_access_token() {
+
+		$auth_access_key = 'HTTP_' . strtoupper( $this->header_auth_access );
+
+		return ! empty( $_SERVER[ $auth_access_key ] ) ? $_SERVER[ $auth_access_key ] : '';
+	}
+
+	/**
+	 * Returns true if the request access token matches our access token.
+	 *
+	 * @return bool
+	 */
+	private function has_valid_access_token() {
+
+		return $this->get_access_token() === $this->get_request_access_token();
+	}
+
+	/**
+	 * Add any necessary headers for REST requests.
+	 *
+	 * @param $value
+	 *
+	 * @return mixed
+	 */
+	public function add_rest_headers( $value ) {
+
+		/*
+		 * Only allow for these specific REST paths.
+		 */
+		$rest_paths = [ '/wp-json/jwt-auth/v1/token', '/wp-json/wpcampus/auth/user' ];
+
+		if ( ! in_array( $_SERVER['REQUEST_URI'], $rest_paths ) ) {
+			return $value;
+		}
+
+		// @TODO: Only allow from WPCampus domains?
+		//$origin = ! empty( $_SERVER['HTTP_ORIGIN'] ) ? $_SERVER['HTTP_ORIGIN'] : '';
+
+		header( 'Access-Control-Allow-Headers: Accept, Authorization, Content-Type, ' . $this->header_auth_access );
+		header( 'Cache-Control: no-cache, must-revalidate, max-age=0' );
+		header( 'Access-Control-Allow-Origin: *' );
+
+		return $value;
+	}
+
+	/**
 	 * Filter the auth token returned by JWT Authentication for WP-API
 	 * plugin to include the user data we need.
 	 *
@@ -48,6 +124,10 @@ final class WPCampus_Auth_API {
 	 * @return array
 	 */
 	public function filter_jwt_auth_dispatch( $data, $user ) {
+
+		if ( ! $this->has_valid_access_token() ) {
+			return [];
+		}
 
 		$new_data = [
 			'token' => $data['token'],
@@ -78,9 +158,13 @@ final class WPCampus_Auth_API {
 	 *
 	 * @param $user - WP_User object
 	 *
-	 * @return object
+	 * @return array|object
 	 */
 	private function prepare_user_data( $user ) {
+
+		if ( ! $this->has_valid_access_token() ) {
+			return [];
+		}
 
 		$user_data = $user->data;
 
