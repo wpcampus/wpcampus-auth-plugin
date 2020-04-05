@@ -21,7 +21,6 @@ final class WPCampus_Auth_API {
 		$plugin = new self();
 
 		$plugin->define_jwt_secret_key();
-		//$plugin->enable_jwt_cors(); // @TODO enable?
 
 		add_action( 'rest_api_init', [ $plugin, 'init_rest_api' ] );
 
@@ -188,13 +187,6 @@ final class WPCampus_Auth_API {
 	 */
 	private function define_jwt_secret_key() {
 		define( 'JWT_AUTH_SECRET_KEY', get_option( $this->option_name_jwt_secret_key ) );
-	}
-
-	/**
-	 * Enable CORS for the JWT plugin.
-	 */
-	private function enable_jwt_cors() {
-		define( 'JWT_AUTH_CORS_ENABLE', true );
 	}
 
 	/**
