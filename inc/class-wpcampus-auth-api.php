@@ -25,6 +25,8 @@ final class WPCampus_Auth_API {
 
 		add_action( 'rest_api_init', [ $plugin, 'init_rest_api' ] );
 
+		add_action( 'rest_api_init', [ $plugin, 'register_routes' ] );
+
 		add_filter( 'rest_authentication_errors', [ $plugin, 'process_rest_authentication' ] );
 
 		add_filter( 'rest_pre_serve_request', [ $plugin, 'add_rest_headers' ] );
@@ -59,7 +61,22 @@ final class WPCampus_Auth_API {
 		 */
 		//remove_action( 'wp_head', 'rest_output_link_wp_head', 10 );
 		//remove_action( 'xmlrpc_rsd_apis', 'rest_output_rsd' );
+	}
 
+	/**
+	 * Register our API routes.
+	 */
+	public function register_routes() {
+
+		// Get current user per the JWT token. Depends on JWT plugin.
+		register_rest_route(
+			'wpcampus',
+			'/auth/user/',
+			[
+				'methods'  => 'GET',
+				'callback' => [ $this, 'get_current_user' ],
+			]
+		);
 	}
 
 	/**
@@ -79,7 +96,7 @@ final class WPCampus_Auth_API {
 		$current_route = wpcampus_get_current_rest_route();
 
 		// Allow open access for these specific REST paths.
-		$rest_paths = [ '/jwt-auth/v1/token', '/jwt-auth/v1/token/validate' ];
+		$rest_paths = [ '/jwt-auth/v1/token', '/jwt-auth/v1/token/validate', '/wpcampus/auth/user' ];
 
 		if ( in_array( $current_route, $rest_paths ) ) {
 			return $access;
@@ -225,6 +242,30 @@ final class WPCampus_Auth_API {
 		$user_data->caps = $user->allcaps;
 
 		return $user_data;
+	}
+
+	/**
+	 * This route depends on the "JWT Authentication for WP-API" plugin which:
+	 * - intercepts the request
+	 * - validates the token
+	 * - sets the current user
+	 *
+	 * @param WP_REST_Request $request
+	 *
+	 * @return WP_Error|WP_REST_Response
+	 */
+	public function get_current_user( WP_REST_Request $request ) {
+
+		$response = wp_get_current_user();
+
+		if ( empty( $response->ID ) || empty( $response->data ) ) {
+			return new WP_Error( 'wpcampus', __( 'This user is invalid.', 'wpcampus-auth' ), [ 'status' => rest_authorization_required_code() ] );
+		}
+
+		// Clean up response. We only need specific user data.
+		$user = $this->prepare_user_data( $response );
+
+		return new WP_REST_Response( $user );
 	}
 }
 
