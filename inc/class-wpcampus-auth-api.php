@@ -102,8 +102,10 @@ final class WPCampus_Auth_API {
 			'/wpcampus/data/notifications',
 			'/wpcampus/data/public/sessions',
 			'/wpcampus/data/videos',
-			'/wp/v2/posts' ];
 			'/wpcampus/search',
+			'/wpcampus/tweets',
+			'/wp/v2/posts',
+		];
 
 		if ( in_array( $current_route, $rest_paths ) ) {
 			return $access;
